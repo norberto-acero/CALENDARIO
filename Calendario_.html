@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Colombia 2026 - Escuela Internacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            /* Fondos */
+            --bg-deep: #00205B;
+            --bg-navy: #00387D;
+            --bg-muted-blue: #93aac9;
+            --bg-cream: #f7efd9;
+            --bg-gold-dark: #89764B;
+            
+            /* Primarios */
+            --primary-dark: #ba550f;
+            --primary-main: #e27614;
+            --primary-light: #eead72;
+            --primary-pale: #f6d6b8;
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--bg-deep);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-navy) 100%);
+            color: white;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .month-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid var(--bg-muted-blue);
+        }
+
+        .month-header {
+            background-color: var(--bg-navy);
+            color: white;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 0.5rem;
+        }
+
+        .day-label {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--bg-gold-dark);
+            padding: 0.5rem 0;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            border-radius: 50%;
+            cursor: default;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .day-cell.active:hover {
+            background-color: var(--primary-pale);
+        }
+
+        /* Marcadores - NUEVA LÓGICA SOLICITADA */
+        
+        /* Los EVENTOS ahora tienen fondo naranja */
+        .is-school-event {
+            background-color: var(--primary-main) !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        /* Los FESTIVOS ahora tienen el borde dorado */
+        .is-holiday {
+            border: 2px solid var(--bg-gold-dark);
+            color: var(--bg-deep);
+            font-weight: 800;
+        }
+
+        .is-holiday::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            width: 4px;
+            height: 4px;
+            background-color: var(--bg-gold-dark);
+            border-radius: 50%;
+        }
+
+        /* Tooltip Personalizado */
+        .tooltip {
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--bg-deep);
+            color: var(--bg-cream);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--bg-deep) transparent transparent transparent;
+        }
+
+        .day-cell:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .custom-file-upload {
+            background-color: var(--primary-main);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+        }
+
+        .custom-file-upload:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-section p-8 text-center">
+        <h1 class="text-4xl font-bold mb-2">2026</h1>
+        <p class="text-blue-200 mb-6">Escuela Internacional - Gestión de Eventos</p>
+        
+        <div class="flex flex-col items-center gap-4">
+            <label class="custom-file-upload shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Subir Excel de Eventos
+                <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden">
+            </label>
+            <p class="text-xs text-blue-100 opacity-75">Sube un archivo con columnas "Fecha" (YYYY-MM-DD), "Tipo" y "Nombre"</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-8">
+        <!-- Leyenda Actualizada -->
+        <div class="flex justify-center gap-8 mb-8 flex-wrap px-4">
+            <div class="legend-item">
+                <div class="dot" style="background-color: var(--primary-main);"></div>
+                <span>Evento Escuela Internacional</span>
+            </div>
+            <div class="legend-item">
+                <div class="dot" style="border: 2px solid var(--bg-gold-dark);"></div>
+                <span>Festivo Nacional</span>
+            </div>
+        </div>
+
+        <!-- Mensaje de Carga -->
+        <div id="statusMsg" class="text-center mb-4 hidden">
+            <span class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">¡Datos actualizados correctamente!</span>
+        </div>
+
+        <!-- Contenedor de Meses -->
+        <div id="calendarContainer" class="calendar-grid">
+            <!-- Los meses se generarán aquí con JS -->
+        </div>
+    </main>
+
+    <footer class="p-8 text-center text-sm text-gray-500 border-t border-gray-200">
+        &copy; 2026 Calendario Corporativo - Escuela Internacional de Colombia
+    </footer>
+
+    <script>
+        const months = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+        
+        const dayLabels = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+        const year = 2026;
+        
+        let dynamicEvents = [];
+
+        function initCalendar() {
+            const container = document.getElementById('calendarContainer');
+            container.innerHTML = '';
+
+            for (let m = 0; m < 12; m++) {
+                const monthCard = document.createElement('div');
+                monthCard.className = 'month-card';
+                
+                const header = document.createElement('div');
+                header.className = 'month-header';
+                header.innerText = months[m];
+                monthCard.appendChild(header);
+
+                const daysGrid = document.createElement('div');
+                daysGrid.className = 'days-grid';
+
+                // Headers de días
+                dayLabels.forEach(label => {
+                    const dLabel = document.createElement('div');
+                    dLabel.className = 'day-label';
+                    dLabel.innerText = label;
+                    daysGrid.appendChild(dLabel);
+                });
+
+                // Calcular días
+                const firstDay = new Date(year, m, 1).getDay();
+                const startingPoint = firstDay === 0 ? 6 : firstDay - 1;
+                const daysInMonth = new Date(year, m + 1, 0).getDate();
+
+                // Celdas vacías
+                for (let i = 0; i < startingPoint; i++) {
+                    const emptyCell = document.createElement('div');
+                    daysGrid.appendChild(emptyCell);
+                }
+
+                // Días del mes
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell active group';
+                    dayCell.innerText = d;
+                    
+                    const dateStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    
+                    // Comprobar eventos
+                    const event = dynamicEvents.find(e => e.fecha === dateStr);
+                    if (event) {
+                        // Crear Tooltip
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'tooltip';
+                        tooltip.innerText = event.nombre || (event.tipo.toLowerCase().includes('festivo') ? 'Festivo' : 'Evento Escuela');
+                        dayCell.appendChild(tooltip);
+
+                        // Aplicar estilos según la nueva lógica solicitada
+                        if (event.tipo.toLowerCase().includes('festivo')) {
+                            dayCell.classList.add('is-holiday');
+                        } else {
+                            dayCell.classList.add('is-school-event');
+                        }
+                    }
+
+                    daysGrid.appendChild(dayCell);
+                }
+
+                monthCard.appendChild(daysGrid);
+                container.appendChild(monthCard);
+            }
+        }
+
+        // Manejo del Excel
+        document.getElementById('excelInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                dynamicEvents = jsonData.map(row => {
+                    let rawDate = row.Fecha || row.fecha;
+                    if (typeof rawDate === 'number') {
+                        const dateObj = XLSX.SSF.parse_date_code(rawDate);
+                        rawDate = `${dateObj.y}-${String(dateObj.m).padStart(2, '0')}-${String(dateObj.d).padStart(2, '0')}`;
+                    }
+                    
+                    return {
+                        fecha: rawDate,
+                        tipo: String(row.Tipo || row.tipo || 'Evento'),
+                        nombre: row.Nombre || row.nombre || ''
+                    };
+                });
+
+                document.getElementById('statusMsg').classList.remove('hidden');
+                initCalendar();
+            };
+            reader.readAsBinaryString(file);
+        });
+
+        window.onload = initCalendar;
+    </script>
+</body>
+</html>
