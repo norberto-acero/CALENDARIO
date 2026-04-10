@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Colombia 2026 - Escuela Internacional</title>
+    <title>Eventos Escuela Internacional 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -20,6 +20,9 @@
             --primary-main: #e27614;
             --primary-light: #eead72;
             --primary-pale: #f6d6b8;
+
+            /* Alertas/Días Especiales */
+            --sunday-red: #d32f2f;
         }
 
         body {
@@ -31,6 +34,8 @@
         .header-section {
             background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-navy) 100%);
             color: white;
+            position: relative;
+            z-index: 10;
         }
 
         .calendar-grid {
@@ -44,8 +49,9 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            overflow: visible; /* Cambiado de hidden a visible para no cortar tooltips */
             border: 1px solid var(--bg-muted-blue);
+            position: relative;
         }
 
         .month-header {
@@ -56,6 +62,7 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
+            border-radius: 12px 12px 0 0;
         }
 
         .days-grid {
@@ -82,25 +89,33 @@
             cursor: default;
             position: relative;
             transition: all 0.2s;
+            z-index: 1; /* Nivel base para días */
+        }
+
+        .day-cell:hover {
+            z-index: 100; /* Eleva el día y su tooltip por encima de todo al hacer hover */
+        }
+
+        .is-sunday {
+            color: var(--sunday-red);
+            font-weight: 600;
         }
 
         .day-cell.active:hover {
             background-color: var(--primary-pale);
         }
 
-        /* Marcadores - NUEVA LÓGICA SOLICITADA */
+        /* Marcadores */
         
-        /* Los EVENTOS ahora tienen fondo naranja */
         .is-school-event {
             background-color: var(--primary-main) !important;
             color: white !important;
             font-weight: bold;
         }
 
-        /* Los FESTIVOS ahora tienen el borde dorado */
         .is-holiday {
             border: 2px solid var(--bg-gold-dark);
-            color: var(--bg-deep);
+            color: var(--bg-deep) !important;
             font-weight: 800;
         }
 
@@ -114,24 +129,27 @@
             border-radius: 50%;
         }
 
-        /* Tooltip Personalizado */
+        /* Tooltip Corregido */
         .tooltip {
             position: absolute;
-            bottom: 125%;
+            bottom: 110%; /* Un poco más cerca del número */
             left: 50%;
             transform: translateX(-50%);
             background-color: var(--bg-deep);
             color: var(--bg-cream);
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 0.75rem;
-            white-space: nowrap;
-            z-index: 50;
+            white-space: normal; /* Permite saltos de línea si el nombre es largo */
+            min-width: 120px;
+            text-align: center;
+            z-index: 110;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
             pointer-events: none;
+            line-height: 1.2;
         }
 
         .tooltip::after {
@@ -183,9 +201,9 @@
 </head>
 <body>
 
-    <header class="header-section p-8 text-center">
-        <h1 class="text-4xl font-bold mb-2">2026</h1>
-        <p class="text-blue-200 mb-6">Escuela Internacional - Gestión de Eventos</p>
+    <header class="header-section p-8 text-center shadow-md">
+        <h1 class="text-4xl font-bold mb-2">Eventos Escuela Internacional 2026</h1>
+        <p class="text-blue-200 mb-6">Gestión de Calendario Académico y Festivos Nacionales</p>
         
         <div class="flex flex-col items-center gap-4">
             <label class="custom-file-upload shadow-lg">
@@ -193,12 +211,11 @@
                 Subir Excel de Eventos
                 <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden">
             </label>
-            <p class="text-xs text-blue-100 opacity-75">Sube un archivo con columnas "Fecha" (YYYY-MM-DD), "Tipo" y "Nombre"</p>
+            <p class="text-xs text-blue-100 opacity-75">Formato requerido: Columnas "Fecha" (YYYY-MM-DD), "Tipo" y "Nombre"</p>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto py-8">
-        <!-- Leyenda Actualizada -->
         <div class="flex justify-center gap-8 mb-8 flex-wrap px-4">
             <div class="legend-item">
                 <div class="dot" style="background-color: var(--primary-main);"></div>
@@ -208,21 +225,21 @@
                 <div class="dot" style="border: 2px solid var(--bg-gold-dark);"></div>
                 <span>Festivo Nacional</span>
             </div>
+            <div class="legend-item">
+                <div class="dot" style="background-color: var(--sunday-red); opacity: 0.6;"></div>
+                <span>Domingo</span>
+            </div>
         </div>
 
-        <!-- Mensaje de Carga -->
         <div id="statusMsg" class="text-center mb-4 hidden">
-            <span class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">¡Datos actualizados correctamente!</span>
+            <span class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">¡Calendario actualizado con éxito!</span>
         </div>
 
-        <!-- Contenedor de Meses -->
-        <div id="calendarContainer" class="calendar-grid">
-            <!-- Los meses se generarán aquí con JS -->
-        </div>
+        <div id="calendarContainer" class="calendar-grid"></div>
     </main>
 
     <footer class="p-8 text-center text-sm text-gray-500 border-t border-gray-200">
-        &copy; 2026 Calendario Corporativo - Escuela Internacional de Colombia
+        &copy; 2026 Escuela Internacional de Colombia
     </footer>
 
     <script>
@@ -233,7 +250,6 @@
         
         const dayLabels = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
         const year = 2026;
-        
         let dynamicEvents = [];
 
         function initCalendar() {
@@ -252,7 +268,6 @@
                 const daysGrid = document.createElement('div');
                 daysGrid.className = 'days-grid';
 
-                // Headers de días
                 dayLabels.forEach(label => {
                     const dLabel = document.createElement('div');
                     dLabel.className = 'day-label';
@@ -260,35 +275,35 @@
                     daysGrid.appendChild(dLabel);
                 });
 
-                // Calcular días
-                const firstDay = new Date(year, m, 1).getDay();
+                const firstDayDate = new Date(year, m, 1);
+                const firstDay = firstDayDate.getDay();
                 const startingPoint = firstDay === 0 ? 6 : firstDay - 1;
                 const daysInMonth = new Date(year, m + 1, 0).getDate();
 
-                // Celdas vacías
                 for (let i = 0; i < startingPoint; i++) {
                     const emptyCell = document.createElement('div');
                     daysGrid.appendChild(emptyCell);
                 }
 
-                // Días del mes
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dayCell = document.createElement('div');
-                    dayCell.className = 'day-cell active group';
+                    dayCell.className = 'day-cell active';
                     dayCell.innerText = d;
                     
+                    const currentFullDate = new Date(year, m, d);
                     const dateStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     
-                    // Comprobar eventos
+                    if (currentFullDate.getDay() === 0) {
+                        dayCell.classList.add('is-sunday');
+                    }
+
                     const event = dynamicEvents.find(e => e.fecha === dateStr);
                     if (event) {
-                        // Crear Tooltip
                         const tooltip = document.createElement('div');
                         tooltip.className = 'tooltip';
                         tooltip.innerText = event.nombre || (event.tipo.toLowerCase().includes('festivo') ? 'Festivo' : 'Evento Escuela');
                         dayCell.appendChild(tooltip);
 
-                        // Aplicar estilos según la nueva lógica solicitada
                         if (event.tipo.toLowerCase().includes('festivo')) {
                             dayCell.classList.add('is-holiday');
                         } else {
@@ -304,7 +319,6 @@
             }
         }
 
-        // Manejo del Excel
         document.getElementById('excelInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
